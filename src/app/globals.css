@@ -1,26 +1,107 @@
-@import "tailwindcss";
+/* Base */
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, Arial; background: #f4f6f8; }
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Buttons */
+.btn{
+  width: 100%;
+  padding: 12px 14px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 700;
+  background: #0A5D2A;
+  color: #fff;
+}
+.btn:disabled{ opacity: .6; cursor: not-allowed; }
+.btn-outline{
+  background: transparent;
+  border: 2px solid #0A5D2A;
+  color: #0A5D2A;
+  width: auto;
+  padding: 10px 14px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Inputs */
+.input{
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #d6dde5;
+  outline: none;
+  font-size: 15px;
 }
+.input:focus{ border-color: #0A5D2A; }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Login */
+.login-wrap{
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+.login-card{
+  width: min(920px, 100%);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 12px 30px rgba(0,0,0,.12);
+  background: #fff;
+}
+.login-left{
+  padding: 42px;
+  background: linear-gradient(135deg, #0A5D2A, #1a8a45);
+  color: white;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+.login-left h2{ margin:0 0 12px 0; font-size: 38px; }
+.login-left p{ margin:0; opacity: .95; font-size: 16px; line-height: 1.4; }
+
+.login-right{
+  padding: 42px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+.login-title{ margin:0 0 18px 0; font-size: 34px; }
+.login-form{ display:flex; flex-direction:column; gap: 12px; }
+
+/* Dashboard */
+.dash-container{ padding: 18px; max-width: 1100px; margin: 0 auto; }
+.dash-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.dash-title{ margin:0; font-size: 34px; }
+.dash-subtitle{ margin: 6px 0 0 0; color: #4a5563; }
+
+.card{
+  background:#fff;
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 10px 22px rgba(0,0,0,.08);
+}
+.card-title{ margin: 0 0 8px 0; }
+.card-text{ margin: 0; color: #4a5563; }
+
+@media (max-width: 860px){
+  .login-card{ grid-template-columns: 1fr; }
+  .login-left{ padding: 28px; }
+  .login-right{ padding: 28px; }
+}
+@media (max-width: 900px) {
+  /* esconde tabla y muestra cards */
+  .tableWrap {
+    display: none !important;
   }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  .cardsWrap {
+    display: grid !important;
+  }
 }
