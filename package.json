@@ -11,6 +11,7 @@
   "dependencies": {
     "@supabase-js/source": "github:supabase/supabase-js",
     "@supabase/supabase-js": "^2.89.0",
+    "lottie-react": "^2.4.1",
     "next": "16.1.0",
     "postgres": "^3.4.7",
     "react": "19.2.3",

@@ -3,11 +3,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
+import Lottie from "lottie-react";
 import { supabase } from "../Libreria/supabaseClient";
 
+// Importación de la animación 
+import animationData from "../animations/drawkit-grape-animation-7-LOOP.json";
+
 /** =======================
- *  Utils fechas / estado
- *  ======================= */
+ * Utils fechas / estado
+ * ======================= */
 function parseDateSafe(value) {
   if (!value) return null;
   const d = new Date(value);
@@ -23,7 +27,6 @@ function daysDiffFromToday(dateValue) {
   return Math.ceil((d - today) / (1000 * 60 * 60 * 24));
 }
 
-// “peor” estado entre vencimiento_licencia / vencimiento_contrato
 function getExpiryStatus(row) {
   const candidates = [
     daysDiffFromToday(row.vencimiento_licencia),
@@ -42,9 +45,6 @@ function getExpiryStatus(row) {
 
 const TABLE = "reporte_clientes_sw";
 
-/** =======================
- *  Campos que editaremos
- *  ======================= */
 const FIELDS = [
   { key: "cliente", label: "Cliente", type: "text" },
   { key: "vendedor", label: "Vendedor", type: "text" },
@@ -74,7 +74,6 @@ function emptyForm() {
 export default function DashboardPage() {
   const router = useRouter();
 
-  // ✅ AHORA usuario viene de Supabase Auth (evita bucle)
   const [usuario, setUsuario] = useState(null);
   const [checkingSession, setCheckingSession] = useState(true);
   const redirectedRef = useRef(false);
@@ -83,45 +82,31 @@ export default function DashboardPage() {
   const [rows, setRows] = useState([]);
   const [q, setQ] = useState("");
 
-  // UI state
   const [activeMenu, setActiveMenu] = useState("clientes");
   const [openModal, setOpenModal] = useState(false);
-  const [mode, setMode] = useState("create"); // create | edit | view
+  const [mode, setMode] = useState("create"); 
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState(emptyForm());
   const [saving, setSaving] = useState(false);
 
-  // paginación
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
-  // ✅ Validar sesión (ANTI LOOP)
   useEffect(() => {
     let mounted = true;
-
     (async () => {
       try {
         setCheckingSession(true);
-
-        // ✅ getSession es más estable al inicio que getUser
         const { data, error } = await supabase.auth.getSession();
         const session = data?.session;
-
         if (!mounted) return;
-
         if (error || !session?.user) {
           if (!redirectedRef.current) {
             redirectedRef.current = true;
-            await Swal.fire({
-              icon: "warning",
-              title: "Sesión requerida",
-              text: "Debes iniciar sesión",
-            });
             router.replace("/login");
           }
           return;
         }
-
         setUsuario(session.user.email);
         await fetchRows();
       } catch (err) {
@@ -134,11 +119,7 @@ export default function DashboardPage() {
         if (mounted) setCheckingSession(false);
       }
     })();
-
-    return () => {
-      mounted = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => { mounted = false; };
   }, []);
 
   async function fetchRows() {
@@ -178,9 +159,7 @@ export default function DashboardPage() {
     return filtered.slice(start, start + pageSize);
   }, [filtered, page]);
 
-  useEffect(() => {
-    setPage(1);
-  }, [q]);
+  useEffect(() => { setPage(1); }, [q]);
 
   const logout = async () => {
     await supabase.auth.signOut();
@@ -188,26 +167,9 @@ export default function DashboardPage() {
     router.replace("/login");
   };
 
-  function openCreate() {
-    setMode("create");
-    setSelected(null);
-    setForm(emptyForm());
-    setOpenModal(true);
-  }
-
-  function openView(row) {
-    setMode("view");
-    setSelected(row);
-    setForm(fromRowToForm(row));
-    setOpenModal(true);
-  }
-
-  function openEdit(row) {
-    setMode("edit");
-    setSelected(row);
-    setForm(fromRowToForm(row));
-    setOpenModal(true);
-  }
+  function openCreate() { setMode("create"); setSelected(null); setForm(emptyForm()); setOpenModal(true); }
+  function openView(row) { setMode("view"); setSelected(row); setForm(fromRowToForm(row)); setOpenModal(true); }
+  function openEdit(row) { setMode("edit"); setSelected(row); setForm(fromRowToForm(row)); setOpenModal(true); }
 
   function fromRowToForm(row) {
     const f = emptyForm();
@@ -219,25 +181,20 @@ export default function DashboardPage() {
     return f;
   }
 
-  function setField(k, v) {
-    setForm((prev) => ({ ...prev, [k]: v }));
-  }
+  function setField(k, v) { setForm((prev) => ({ ...prev, [k]: v })); }
 
   async function save() {
     try {
       setSaving(true);
-
       const payload = {};
       for (const field of FIELDS) {
         let v = form[field.key];
-
         if (field.type === "number") {
           v = v === "" ? null : Number(v);
           if (Number.isNaN(v)) v = null;
         }
         if (field.type === "date") v = v ? v : null;
         if ((field.type === "text" || field.type === "textarea") && v === "") v = null;
-
         payload[field.key] = v;
       }
 
@@ -251,15 +208,12 @@ export default function DashboardPage() {
         if (error) throw error;
         Swal.fire({ icon: "success", title: "Actualizado", timer: 900, showConfirmButton: false });
       }
-
       setOpenModal(false);
       await fetchRows();
     } catch (err) {
       console.error(err);
       Swal.fire({ icon: "error", title: "Error guardando", text: err.message ?? "Ocurrió un error" });
-    } finally {
-      setSaving(false);
-    }
+    } finally { setSaving(false); }
   }
 
   async function removeRow(row) {
@@ -272,7 +226,6 @@ export default function DashboardPage() {
       cancelButtonText: "Cancelar",
     });
     if (!res.isConfirmed) return;
-
     try {
       const { error } = await supabase.from(TABLE).delete().eq("id", row.id);
       if (error) throw error;
@@ -284,18 +237,21 @@ export default function DashboardPage() {
     }
   }
 
-  // ✅ mientras valida sesión
-  if (checkingSession) {
-    return <div style={{ padding: 20 }}>Validando sesión...</div>;
-  }
+  if (checkingSession) return <div style={{ padding: 20 }}>Validando sesión...</div>;
   if (!usuario) return null;
 
   return (
     <div className="appShell">
-      {/* Sidebar */}
+      {/* Sidebar - Barra Azul Izquierda */}
       <aside className="sidebar">
         <div className="brand">
-          <div className="brandLogo">CP</div>
+          <div className="brandLogo">
+            <img 
+              src="/contimaca.png"  
+              alt="Logo Contimaca" 
+              style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} 
+            />
+          </div>
           <div>
             <div className="brandTitle">Clientes</div>
             <div className="brandSub">Panel Admin</div>
@@ -316,7 +272,7 @@ export default function DashboardPage() {
               Swal.fire({
                 icon: "info",
                 title: "Próximo paso",
-                text: "Cuando quieras, agregamos más tablas aquí (menú lateral) con el mismo CRUD.",
+                text: "Pronto agregaremos más tablas aquí.",
               })
             }
           >
@@ -330,6 +286,15 @@ export default function DashboardPage() {
           </button>
         </nav>
 
+        {/* ✅ Animación de Lottie integrada en el sidebar */}
+        <div className="sidebarAnimation">
+          <Lottie 
+            animationData={animationData} 
+            loop={true} 
+            style={{ width: "100%", height: "160px" }} 
+          />
+        </div>
+
         <div className="sidebarFooter">
           <div className="who">
             <div className="whoDot" />
@@ -341,7 +306,7 @@ export default function DashboardPage() {
         </div>
       </aside>
 
-      {/* Main */}
+      {/* Main Content */}
       <main className="main">
         <header className="topbar">
           <div>
@@ -355,30 +320,26 @@ export default function DashboardPage() {
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Buscar por cualquier campo..."
+                placeholder="Buscar cliente..."
                 className="search"
               />
             </div>
-
-            {/* ✅ Botón pequeño + texto */}
-            <button className="btn btnSm" onClick={openCreate}>
+            <button className="btn btnSm btnAdd primary" onClick={openCreate}>
               + Agregar cliente
             </button>
           </div>
         </header>
 
-        {/* Stats */}
         <section className="stats">
           <span className="chip red">Vencido: {stats.expired}</span>
-          <span className="chip yellow">Vence pronto (≤15): {stats.soon}</span>
-          <span className="chip amber">Advertencia (≤45): {stats.warn}</span>
+          <span className="chip yellow">Vence en 15 días: {stats.soon}</span>
+          <span className="chip amber">Aviso 45 días: {stats.warn}</span>
           <span className="chip gray">Sin fecha: {stats.nofecha}</span>
         </section>
 
-        {/* Table */}
         <section className="card">
           {loading ? (
-            <div className="empty">Cargando...</div>
+            <div className="empty">Cargando datos...</div>
           ) : (
             <>
               <div className="table">
@@ -398,80 +359,48 @@ export default function DashboardPage() {
                       key={r.id}
                       className={`trow ${st.level}`}
                       onDoubleClick={() => openView(r)}
-                      title="Doble click para ver detalle"
                     >
                       <div className="cell">
                         <div className="title">{r.cliente ?? "-"}</div>
-                        <div className="muted">
-                          ID #{r.id} · {r.modalidad ?? "-"} · {r.marca_licencia ?? "-"}
-                        </div>
+                        <div className="muted">{r.modalidad ?? "-"} · {r.marca_licencia ?? "-"}</div>
                       </div>
-
                       <div className="cell">
                         <div className="title">{r.nombre_software ?? "-"}</div>
-                        <div className="muted">
-                          {r.tipo_de_licencia ?? "-"} · Qty {r.cantidad_licencia ?? "-"}
-                        </div>
+                        <div className="muted">Qty: {r.cantidad_licencia ?? "-"}</div>
                       </div>
-
                       <div className="cell">
                         <div className="title">{r.persona_contacto ?? "-"}</div>
-                        <div className="muted">
-                          {r.correo ?? "-"} {r.telefono ? `· ${r.telefono}` : ""}
-                        </div>
+                        <div className="muted">{r.correo ?? "-"}</div>
                       </div>
-
                       <div className="cell">
                         <div className="muted">Lic: {r.vencimiento_licencia ?? "-"}</div>
                         <div className="muted">Cont: {r.vencimiento_contrato ?? "-"}</div>
                       </div>
-
                       <div className="cell">
                         <span className={`pill ${st.level}`}>{st.label}</span>
                       </div>
-
-                      <div className="cell right actionsCell" onClick={(e) => e.stopPropagation()}>
-                        <button className="mini" onClick={() => openView(r)}>
-                          Ver
-                        </button>
-                        <button className="mini" onClick={() => openEdit(r)}>
-                          Editar
-                        </button>
-                        <button className="mini danger" onClick={() => removeRow(r)}>
-                          Eliminar
-                        </button>
+                      <div className="cell right actionsCell">
+                        <button className="mini" onClick={() => openEdit(r)}>Editar</button>
+                        <button className="mini danger" onClick={() => removeRow(r)}>Eliminar</button>
                       </div>
                     </div>
                   );
                 })}
-
-                {pageRows.length === 0 && <div className="empty">No hay resultados.</div>}
               </div>
 
-              {/* Pagination */}
               <div className="pager">
-                <div className="muted">
-                  Mostrando {filtered.length === 0 ? 0 : (page - 1) * pageSize + 1}-
-                  {Math.min(page * pageSize, filtered.length)} de {filtered.length}
-                </div>
-
+                <div className="muted">Total: {filtered.length} registros</div>
                 <div className="pagerBtns">
-                  <button className="mini" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-                    ◀
-                  </button>
-                  <div className="pagerNum">
-                    Página <b>{page}</b> / {totalPages}
-                  </div>
-                  <button className="mini" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
-                    ▶
-                  </button>
+                  <button className="mini" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>◀</button>
+                  <div className="pagerNum">Página {page} de {totalPages}</div>
+                  <button className="mini" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>▶</button>
                 </div>
               </div>
             </>
           )}
         </section>
 
-        {/* Modal */}
+        {/* Modal de CRUD */}
         {openModal && (
           <div className="modalOverlay" onMouseDown={() => setOpenModal(false)}>
             <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
@@ -480,52 +409,26 @@ export default function DashboardPage() {
                   <div className="modalTitle">
                     {mode === "create" ? "Nuevo registro" : mode === "edit" ? "Editar registro" : "Detalle"}
                   </div>
-                  <div className="muted">{mode !== "create" ? `ID #${selected?.id}` : "Completa los datos"}</div>
                 </div>
-
-                <button className="iconBtn" onClick={() => setOpenModal(false)}>
-                  ✕
-                </button>
+                <button className="iconBtn" onClick={() => setOpenModal(false)}>✕</button>
               </div>
-
               <div className="modalBody">
                 <div className="formGrid">
                   {FIELDS.map((f) => (
                     <div className={`field ${f.type === "textarea" ? "span2" : ""}`} key={f.key}>
                       <label className="label">{f.label}</label>
-
                       {f.type === "textarea" ? (
-                        <textarea
-                          className="input"
-                          rows={3}
-                          value={form[f.key] ?? ""}
-                          onChange={(e) => setField(f.key, e.target.value)}
-                          disabled={mode === "view"}
-                        />
+                        <textarea className="input" rows={3} value={form[f.key] ?? ""} onChange={(e) => setField(f.key, e.target.value)} disabled={mode === "view"} />
                       ) : (
-                        <input
-                          className="input"
-                          type={f.type}
-                          value={form[f.key] ?? ""}
-                          onChange={(e) => setField(f.key, e.target.value)}
-                          disabled={mode === "view"}
-                        />
+                        <input className="input" type={f.type} value={form[f.key] ?? ""} onChange={(e) => setField(f.key, e.target.value)} disabled={mode === "view"} />
                       )}
                     </div>
                   ))}
                 </div>
               </div>
-
               <div className="modalFooter">
-                <button className="btnGhost" onClick={() => setOpenModal(false)}>
-                  Cerrar
-                </button>
-
-                {mode !== "view" && (
-                  <button className="btn primary" onClick={save} disabled={saving}>
-                    {saving ? "Guardando..." : mode === "create" ? "Crear" : "Guardar cambios"}
-                  </button>
-                )}
+                <button className="btnGhost" onClick={() => setOpenModal(false)}>Cancelar</button>
+                {mode !== "view" && <button className="btn primary" onClick={save} disabled={saving}>{saving ? "Guardando..." : "Guardar"}</button>}
               </div>
             </div>
           </div>
@@ -540,483 +443,164 @@ export default function DashboardPage() {
           background: #f6f7fb;
         }
 
-        /* Sidebar */
         .sidebar {
-          background: #0b1220;
+          background: linear-gradient(180deg, #0b1220 0%, #0a5d2a 100%);
           color: #e5e7eb;
           padding: 18px;
           display: flex;
           flex-direction: column;
           border-right: 1px solid rgba(255, 255, 255, 0.06);
+          position: sticky;
+          top: 0;
+          height: 100vh;
         }
-        .brand {
-          display: flex;
-          gap: 12px;
-          align-items: center;
-          padding: 10px 8px 14px;
+
+        .sidebarAnimation {
+          margin: 15px 0;
+          filter: drop-shadow(0 10px 15px rgba(0,0,0,0.2));
+          opacity: 0.9;
         }
-        .brandLogo {
-          width: 42px;
-          height: 42px;
-          border-radius: 12px;
-          background: linear-gradient(135deg, #22c55e, #16a34a);
-          display: grid;
-          place-items: center;
-          font-weight: 900;
-          color: #06200f;
-        }
-        .brandTitle {
-          font-weight: 800;
-          font-size: 16px;
-          line-height: 1;
-        }
-        .brandSub {
-          font-size: 12px;
-          opacity: 0.7;
-        }
-        .nav {
-          margin-top: 6px;
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
+
+        .brand { display: flex; gap: 12px; align-items: center; padding: 10px 8px 20px; }
+        .brandLogo { width: 42px; height: 42px; border-radius: 8px; overflow: hidden; }
+        .brandTitle { font-weight: 800; font-size: 16px; }
+        .brandSub { font-size: 12px; opacity: 0.7; }
+        
+        .nav { display: flex; flex-direction: column; gap: 8px; }
         .navItem {
-          text-align: left;
-          width: 100%;
-          padding: 12px 12px;
+          text-align: left; padding: 12px; border-radius: 12px;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          background: rgba(255, 255, 255, 0.04);
+          color: #e5e7eb; cursor: pointer; font-weight: 600;
+        }
+        .navItem.active { background: rgba(34, 197, 94, 0.25); border-color: #22c55e; }
+        .navItem.danger { color: #fca5a5; }
+        .navDivider { height: 1px; background: rgba(255, 255, 255, 0.1); margin: 10px 0; }
+        
+        .sidebarFooter { margin-top: auto; padding-top: 12px; }
+        .who { display: flex; gap: 10px; align-items: center; padding: 12px; border-radius: 14px; background: rgba(0,0,0,0.2); }
+        .whoDot { width: 10px; height: 10px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+        .whoName { font-weight: 800; font-size: 13px; word-break: break-all; }
+
+        .main { padding: 24px; overflow-y: auto; }
+        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .h1 { font-size: 24px; font-weight: 900; color: #0f172a; margin: 0; }
+        
+        .actions { display: flex; gap: 12px; }
+        .searchWrap { 
+          display: flex; align-items: center; gap: 8px; padding: 8px 16px; 
+          background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; width: 300px;
+        }
+        .search { border: none; outline: none; width: 100%; font-size: 14px; }
+        
+        .btn { 
+          padding: 10px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; border: none;
+          transition: all 0.2s;
+        }
+        .btn.primary { background: #0a5d2a; color: #fff; }
+        .btn.primary:hover { background: #084a21; transform: translateY(-1px); }
+
+        .stats { display: flex; gap: 10px; margin-bottom: 20px; }
+        .chip { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; border: 1px solid; }
+        .chip.red { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+        .chip.yellow { background: #fef9c3; color: #854d0e; border-color: #fef08a; }
+        .chip.amber { background: #ffedd5; color: #9a3412; border-color: #fed7aa; }
+        .chip.gray { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }
+
+        .card { background: #fff; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .table { width: 100%; display: flex; flex-direction: column; }
+        .thead { 
+          display: grid; grid-template-columns: 1.2fr 1fr 1.2fr 1fr 0.8fr 0.8fr; 
+          padding: 14px 20px; background: #f8fafc; font-size: 12px; font-weight: 800; color: #64748b;
+          border-bottom: 1px solid #e2e8f0;
+        }
+        .trow { 
+          display: grid; grid-template-columns: 1.2fr 1fr 1.2fr 1fr 0.8fr 0.8fr; 
+          padding: 16px 20px; border-bottom: 1px solid #f1f5f9; align-items: center; transition: background 0.2s;
+        }
+        .trow:hover { background: #f1f5f9; }
+        .title { font-weight: 700; color: #1e293b; }
+        .muted { font-size: 12px; color: #64748b; margin-top: 2px; }
+        
+        .pill { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; border: 1px solid; }
+        .pill.expired { background: #fee2e2; color: #b91c1c; }
+        .pill.soon { background: #fef9c3; color: #a16207; }
+        .pill.ok { background: #dcfce7; color: #15803d; }
+
+        .actionsCell { display: flex; gap: 6px; justify-content: flex-end; }
+        .mini { padding: 6px 12px; border-radius: 8px; border: 1px solid #e2e8f0; background: #fff; font-size: 11px; cursor: pointer; font-weight: 700; }
+        .mini.danger { color: #dc2626; border-color: #fecaca; }
+
+        .pager { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .pagerBtns { display: flex; align-items: center; gap: 12px; }
+
+        .modalOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .modal { background: #fff; width: 90%; max-width: 800px; border-radius: 20px; overflow: hidden; }
+        .modalHeader { padding: 20px; background: #f8fafc; display: flex; justify-content: space-between; }
+        .modalBody { padding: 20px; max-height: 60vh; overflow-y: auto; }
+        .formGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .span2 { grid-column: span 2; }
+        .input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; margin-top: 4px; }
+        .modalFooter { padding: 20px; display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid #e2e8f0; }
+
+        @media (max-width: 1024px) {
+          .appShell { grid-template-columns: 1fr; }
+          .sidebar { display: none; }
+        }
+
+        .navItem {
+          text-align: left; 
+          padding: 12px; 
           border-radius: 12px;
           border: 1px solid rgba(255, 255, 255, 0.08);
           background: rgba(255, 255, 255, 0.04);
-          color: #e5e7eb;
-          cursor: pointer;
+          color: #e5e7eb; 
+          cursor: pointer; 
           font-weight: 600;
+          transition: all 0.2s ease; /* Transición suave */
         }
+
+        /* ✅ Hover para Clientes / Licencias y otros */
         .navItem:hover {
-          background: rgba(255, 255, 255, 0.07);
-        }
-        .navItem.active {
-          background: rgba(34, 197, 94, 0.16);
-          border-color: rgba(34, 197, 94, 0.35);
-        }
-        .navItem.danger {
-          background: rgba(239, 68, 68, 0.12);
-          border-color: rgba(239, 68, 68, 0.35);
-        }
-        .navDivider {
-          height: 1px;
-          background: rgba(255, 255, 255, 0.08);
-          margin: 10px 0;
-        }
-        .sidebarFooter {
-          margin-top: auto;
-          padding-top: 12px;
-        }
-        .who {
-          display: flex;
-          gap: 10px;
-          align-items: center;
-          padding: 12px;
-          border-radius: 14px;
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          background: rgba(255, 255, 255, 0.04);
-        }
-        .whoDot {
-          width: 10px;
-          height: 10px;
-          border-radius: 999px;
-          background: #22c55e;
-          box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.14);
-        }
-        .whoName {
-          font-weight: 800;
-          line-height: 1.1;
-        }
-        .whoSub {
-          font-size: 12px;
-          opacity: 0.7;
+          background: rgba(255, 255, 255, 0.12);
+          transform: translateX(4px); /* Desplazamiento sutil a la derecha */
+          border-color: rgba(255, 255, 255, 0.2);
         }
 
-        /* Main */
-        .main {
-          padding: 22px;
-        }
-        .topbar {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 14px;
-          flex-wrap: wrap;
-          margin-bottom: 14px;
-        }
-        .h1 {
-          margin: 0;
-          font-size: 26px;
-          letter-spacing: -0.02em;
-        }
-        .sub {
-          margin-top: 4px;
-          opacity: 0.75;
-          font-size: 13px;
-        }
-        .actions {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          flex-wrap: wrap;
-        }
-        .searchWrap {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 10px 12px;
-          border-radius: 14px;
-          border: 1px solid #d8dde6;
-          background: #fff;
-          min-width: 280px;
-        }
-        .searchIcon {
-          opacity: 0.7;
-        }
-        .search {
-          border: none;
-          outline: none;
-          width: 100%;
-          font-size: 14px;
-        }
-
-        /* ✅ Botón (hover + pequeño) */
-        .btn {
-          padding: 10px 14px;
-          border-radius: 14px;
-          border: 1px solid #d8dde6;
-          background: #fff;
-          cursor: pointer;
-          font-weight: 800;
-          transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
-        }
-        .btn:hover {
-          background: #f3f4f6;
-          transform: translateY(-1px);
-          box-shadow: 0 10px 18px rgba(15, 23, 42, 0.12);
-        }
-        .btn:active {
-          transform: translateY(0);
-          box-shadow: 0 6px 12px rgba(15, 23, 42, 0.12);
-        }
-        .btnSm {
-          padding: 8px 12px;
-          border-radius: 12px;
-          font-size: 13px;
-        }
-
-        .btn.primary {
-          background: #0a5d2a;
-          border-color: #0a5d2a;
+        .navItem.active { 
+          background: rgba(34, 197, 94, 0.25); 
+          border-color: #22c55e; 
           color: #fff;
         }
-        .btn.primary:hover {
-          filter: brightness(0.95);
+
+        /* ✅ Hover especial para el botón Activo */
+        .navItem.active:hover {
+          background: rgba(34, 197, 94, 0.35);
+          box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
         }
 
-        /* Chips */
-        .stats {
-          display: flex;
-          gap: 10px;
-          flex-wrap: wrap;
-          margin-bottom: 12px;
-        }
-        .chip {
-          font-size: 12px;
-          font-weight: 800;
-          padding: 8px 10px;
-          border-radius: 999px;
-          border: 1px solid;
-        }
-        .chip.red {
-          background: #ffe7e7;
-          border-color: #ffb4b4;
-          color: #7a0d0d;
-        }
-        .chip.yellow {
-          background: #fff7d6;
-          border-color: #ffe08a;
-          color: #6b4c00;
-        }
-        .chip.amber {
-          background: #fff1db;
-          border-color: #ffd2a0;
-          color: #6b3b00;
-        }
-        .chip.gray {
-          background: #eef2ff;
-          border-color: #c7d2fe;
-          color: #1e3a8a;
+        /* ✅ Hover para Cerrar Sesión (Pone el fondo rojizo) */
+        .navItem.danger { 
+          color: #fca5a5; 
         }
 
-        /* Card + Table */
-        .card {
-          background: #fff;
-          border: 1px solid #e7eaf0;
-          border-radius: 18px;
-          box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
-          overflow: hidden;
-        }
-        .table {
-          width: 100%;
-        }
-        .thead,
-        .trow {
-          display: grid;
-          grid-template-columns: 1.2fr 0.9fr 1.1fr 0.8fr 0.8fr 0.8fr;
-          gap: 12px;
-          align-items: center;
-          padding: 14px 16px;
-        }
-        .thead {
-          background: #f6f7fb;
-          font-size: 12px;
-          font-weight: 900;
-          color: #334155;
-        }
-        .trow {
-          border-top: 1px solid #eff2f6;
-          cursor: default;
-        }
-        .trow:hover {
-          background: #fbfcff;
-        }
-        .trow.expired {
-          background: #fff1f1;
-        }
-        .trow.soon {
-          background: #fff8e6;
-        }
-        .trow.warn {
-          background: #fff6ec;
-        }
-        .cell .title {
-          font-weight: 900;
-          color: #0f172a;
-          line-height: 1.2;
-        }
-        .muted {
-          font-size: 12px;
-          opacity: 0.7;
-          margin-top: 2px;
-        }
-        .right {
-          justify-self: end;
-          text-align: right;
+        .navItem.danger:hover {
+          background: rgba(220, 38, 38, 0.15);
+          color: #f87171;
+          border-color: rgba(220, 38, 38, 0.3);
         }
 
-        .actionsCell {
-          display: flex;
-          justify-content: flex-end;
-          gap: 8px;
-          flex-wrap: wrap;
-        }
-        .mini {
-          padding: 8px 10px;
-          border-radius: 12px;
-          border: 1px solid #d8dde6;
-          background: #fff;
-          font-weight: 900;
-          cursor: pointer;
-          font-size: 12px;
-        }
-        .mini:hover {
-          background: #f3f4f6;
-        }
-        .mini.danger {
-          border-color: #ffb4b4;
-          background: #fff1f1;
+        /* ✅ Efecto cuando se hace clic (Active) */
+        .navItem:active {
+          transform: scale(0.97);
         }
 
-        .pill {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 8px 10px;
-          border-radius: 999px;
-          font-weight: 900;
-          font-size: 12px;
-          border: 1px solid;
-          width: fit-content;
+        .navDivider { 
+          height: 1px; 
+          background: rgba(255, 255, 255, 0.1); 
+          margin: 10px 0; 
         }
-        .pill.ok {
-          background: #eafff1;
-          border-color: #b7f2c8;
-          color: #0b5f2a;
-        }
-        .pill.warn {
-          background: #fff1db;
-          border-color: #ffd2a0;
-          color: #6b3b00;
-        }
-        .pill.soon {
-          background: #fff7d6;
-          border-color: #ffe08a;
-          color: #6b4c00;
-        }
-        .pill.expired {
-          background: #ffe7e7;
-          border-color: #ffb4b4;
-          color: #7a0d0d;
-        }
-        .pill.nofecha {
-          background: #eef2ff;
-          border-color: #c7d2fe;
-          color: #1e3a8a;
-        }
-
-        .empty {
-          padding: 18px;
-          opacity: 0.8;
-        }
-
-        .pager {
-          border-top: 1px solid #eff2f6;
-          padding: 12px 16px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-          flex-wrap: wrap;
-        }
-        .pagerBtns {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-        .pagerNum {
-          font-size: 12px;
-          opacity: 0.75;
-        }
-
-        /* Modal */
-        .modalOverlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(15, 23, 42, 0.55);
-          display: grid;
-          place-items: center;
-          padding: 18px;
-          z-index: 999;
-        }
-        .modal {
-          width: min(980px, 100%);
-          background: #fff;
-          border-radius: 18px;
-          border: 1px solid #e7eaf0;
-          box-shadow: 0 24px 70px rgba(0, 0, 0, 0.25);
-          overflow: hidden;
-        }
-        .modalHeader {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 12px;
-          padding: 14px 16px;
-          background: #f6f7fb;
-          border-bottom: 1px solid #e7eaf0;
-        }
-        .modalTitle {
-          font-weight: 1000;
-          font-size: 16px;
-        }
-        .iconBtn {
-          border: none;
-          background: #fff;
-          border: 1px solid #d8dde6;
-          border-radius: 12px;
-          padding: 8px 10px;
-          cursor: pointer;
-          font-weight: 900;
-        }
-        .iconBtn:hover {
-          background: #f3f4f6;
-        }
-        .modalBody {
-          padding: 16px;
-          max-height: 70vh;
-          overflow: auto;
-        }
-        .formGrid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 12px;
-        }
-        .field.span2 {
-          grid-column: span 2;
-        }
-        .label {
-          display: block;
-          font-size: 12px;
-          font-weight: 900;
-          margin-bottom: 6px;
-          opacity: 0.8;
-        }
-        .input {
-          width: 100%;
-          padding: 10px 12px;
-          border-radius: 14px;
-          border: 1px solid #d8dde6;
-          outline: none;
-          font-size: 14px;
-        }
-        .input:focus {
-          border-color: #16a34a;
-          box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.15);
-        }
-        .modalFooter {
-          padding: 12px 16px;
-          border-top: 1px solid #e7eaf0;
-          display: flex;
-          justify-content: flex-end;
-          gap: 10px;
-        }
-        .btnGhost {
-          padding: 10px 14px;
-          border-radius: 14px;
-          border: 1px solid #d8dde6;
-          background: #fff;
-          cursor: pointer;
-          font-weight: 900;
-        }
-        .btnGhost:hover {
-          background: #f3f4f6;
-        }
-
-        /* Responsive */
-        @media (max-width: 980px) {
-          .appShell {
-            grid-template-columns: 1fr;
-          }
-          .sidebar {
-            display: none;
-          }
-          .thead,
-          .trow {
-            grid-template-columns: 1.3fr 1fr 1.1fr;
-          }
-          .thead > div:nth-child(4),
-          .thead > div:nth-child(5),
-          .thead > div:nth-child(6),
-          .trow > div:nth-child(4),
-          .trow > div:nth-child(5),
-          .trow > div:nth-child(6) {
-            display: none;
-          }
-          .formGrid {
-            grid-template-columns: 1fr;
-          }
-          .field.span2 {
-            grid-column: span 1;
-          }
-          .searchWrap {
-            min-width: 220px;
-          }
-        }
+          
       `}</style>
     </div>
   );

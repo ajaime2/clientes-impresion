@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import { supabase } from "../Libreria/supabaseClient";
 import { useRouter } from "next/navigation";
+import Lottie from "lottie-react";
+
+
+import animationData from "../animations/drawkit-grape-animation-1-LOOP.json";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -12,7 +16,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [cargando, setCargando] = useState(false);
 
-  // Si ya hay sesión, manda directo al dashboard
   useEffect(() => {
     (async () => {
       const { data } = await supabase.auth.getSession();
@@ -22,7 +25,6 @@ export default function LoginPage() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-
     const em = email.trim();
     const pw = password.trim();
 
@@ -37,7 +39,6 @@ export default function LoginPage() {
 
     try {
       setCargando(true);
-
       const { data, error } = await supabase.auth.signInWithPassword({
         email: em,
         password: pw,
@@ -79,14 +80,25 @@ export default function LoginPage() {
     <main className="loginWrap">
       <section className="loginCard">
         <div className="left">
-          <div className="badge">CP</div>
+          <div className="badge">
+            <img 
+              src="/contimaca.png" 
+              alt="Logo"
+              style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+            />
+          </div>
           <h2>Clientes & Licencias</h2>
           <p>Acceso interno (solo usuarios autorizados)</p>
 
-          <div className="tips">
-            <div className="tip">Software</div>
-            <div className="tip">Contimaca de Costa Rica</div>
+          {/* ✅ Paso 2: Integración de la animación */}
+          <div className="animationWrap">
+            <Lottie 
+              animationData={animationData} 
+              loop={true} 
+              style={{ width: "100%", height: "220px" }} 
+            />
           </div>
+
         </div>
 
         <div className="right">
@@ -94,7 +106,6 @@ export default function LoginPage() {
           <p className="sub">Ingresa con tu correo corporativo</p>
 
           <form onSubmit={handleLogin} className="form">
-            <label className="label">Correo</label>
             <input
               className="input"
               placeholder="Correo"
@@ -103,8 +114,6 @@ export default function LoginPage() {
               autoComplete="username"
               type="email"
             />
-
-            <label className="label">Contraseña</label>
             <input
               className="input"
               placeholder="Contraseña"
@@ -145,100 +154,79 @@ export default function LoginPage() {
           padding: 26px;
           color: #eaf7ef;
           background: linear-gradient(135deg, #0a5d2a, #0b1220);
-          position: relative;
+          display: flex;
+          flex-direction: column;
         }
         .badge {
-          width: 46px;
-          height: 46px;
+          width: 60px; height: 60px;
           border-radius: 14px;
-          display: grid;
-          place-items: center;
-          font-weight: 1000;
           background: rgba(255, 255, 255, 0.14);
-          border: 1px solid rgba(255, 255, 255, 0.18);
+          padding: 8px;
           margin-bottom: 12px;
         }
-        .left h2 {
-          margin: 0;
-          font-size: 28px;
-          letter-spacing: -0.02em;
+        /* Contenedor de la animación */
+        .animationWrap {
+          margin: 20px 0;
+          filter: drop-shadow(0 10px 15px rgba(0,0,0,0.2));
         }
-        .left p {
-          margin: 6px 0 0;
-          opacity: 0.9;
-        }
-        .tips {
-          margin-top: 18px;
-          display: grid;
-          gap: 10px;
-        }
+        .left h2 { margin: 0; font-size: 28px; }
+        .left p { margin: 6px 0 0; opacity: 0.9; }
+        .tips { margin-top: auto; display: grid; gap: 10px; }
         .tip {
           padding: 12px 14px;
           border-radius: 14px;
           background: rgba(255, 255, 255, 0.1);
           border: 1px solid rgba(255, 255, 255, 0.16);
-          font-weight: 800;
-          font-size: 13px;
+          font-weight: 800; font-size: 13px;
         }
-
-        .right {
-          padding: 26px;
-        }
-        .right h1 {
-          margin: 0;
-          font-size: 24px;
-          letter-spacing: -0.02em;
-        }
-        .sub {
-          margin: 6px 0 16px;
-          opacity: 0.75;
-          font-size: 13px;
-        }
-        .form {
-          display: grid;
-          gap: 10px;
-        }
-        .label {
-          font-size: 12px;
-          font-weight: 900;
-          opacity: 0.85;
-          margin-top: 6px;
-        }
+        .right { padding: 40px; }
+        .right h1 { margin: 0; font-size: 24px; }
+        .sub { margin: 6px 0 16px; opacity: 0.75; font-size: 13px; }
+        .form { display: grid; gap: 10px; }
         .input {
-          width: 100%;
-          padding: 12px 12px;
-          border-radius: 14px;
-          border: 1px solid #d8dde6;
-          outline: none;
-          font-size: 14px;
-          background: #fff;
+          width: 100%; padding: 12px; border-radius: 14px;
+          border: 1px solid #d8dde6; font-size: 14px;
         }
-        .input:focus {
-          border-color: #16a34a;
-          box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18);
-        }
+        .input:focus { border-color: #16a34a; outline: none; box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18); }
         .btn {
-          margin-top: 10px;
-          padding: 12px 14px;
-          border-radius: 14px;
-          border: none;
-          background: #0a5d2a;
-          color: #fff;
-          font-weight: 1000;
-          cursor: pointer;
+          margin-top: 10px; padding: 12px; border-radius: 14px;
+          border: none; background: #0a5d2a; color: #fff;
+          font-weight: 1000; cursor: pointer;
         }
-        .btn:disabled {
-          opacity: 0.7;
-          cursor: not-allowed;
+        .btn:disabled { opacity: 0.7; }
+        @media (max-width: 900px) {
+          .loginCard { grid-template-columns: 1fr; }
+          .left { display: none; }
         }
 
-        @media (max-width: 900px) {
-          .loginCard {
-            grid-template-columns: 1fr;
-          }
-          .left {
-            display: none;
-          }
+        .btn {
+          margin-top: 10px; 
+          padding: 12px; 
+          border-radius: 14px;
+          border: none; 
+          background: #0a5d2a; 
+          color: #fff;
+          font-weight: 800; 
+          cursor: pointer;
+          transition: all 0.2s ease; /* Transición suave */
+        }
+
+        /* ✅ Hover: Se aclara un poco el verde */
+        .btn:hover:not(:disabled) {
+          background: #0e7a37;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(10, 93, 42, 0.25);
+        }
+
+        /* ✅ Active: Efecto de pulsado */
+        .btn:active:not(:disabled) {
+          transform: translateY(0);
+          background: #084d23;
+        }
+
+        .btn:disabled { 
+          opacity: 0.7; 
+          cursor: not-allowed;
         }
       `}</style>
     </main>
