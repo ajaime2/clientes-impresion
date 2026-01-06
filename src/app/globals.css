@@ -105,3 +105,50 @@ body { margin: 0; font-family: system-ui, Arial; background: #f4f6f8; }
     display: grid !important;
   }
 }
+
+
+/* Responsive */
+
+/* Media query para teléfonos */
+@media (max-width: 768px) {
+  /* 1. Login: Uno arriba del otro */
+  .loginContainer { /* Ajusta al nombre de tu clase */
+    flex-direction: column;
+    height: auto;
+  }
+
+  /* 2. Dashboard: Ocultar el Sidebar y mostrarlo con un botón  */
+  .sidebar {
+    display: none; 
+  }
+
+  /* 3. La Tabla: Convertir a bloques */
+  .tablaClientes thead {
+    display: none; /* Ocultamos los encabezados en móvil */
+  }
+
+  .tablaClientes tr {
+    display: block;
+    margin-bottom: 1rem;
+    border: 1px solid #eee;
+    padding: 10px;
+    border-radius: 8px;
+    background: white;
+  }
+
+  .tablaClientes td {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    border: none;
+    text-align: right;
+  }
+
+
+  .tablaClientes td::before {
+    content: attr(data-label); 
+    font-weight: bold;
+    text-align: left;
+    color: #666;
+  }
+}

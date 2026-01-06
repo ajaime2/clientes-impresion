@@ -211,14 +211,14 @@ export default function LoginPage() {
           transition: all 0.2s ease; /* Transición suave */
         }
 
-        /* ✅ Hover: Se aclara un poco el verde */
+        /*  Hover */
         .btn:hover:not(:disabled) {
           background: #0e7a37;
           transform: translateY(-1px);
           box-shadow: 0 4px 12px rgba(10, 93, 42, 0.25);
         }
 
-        /* ✅ Active: Efecto de pulsado */
+        /*  Active: Efecto de pulsado */
         .btn:active:not(:disabled) {
           transform: translateY(0);
           background: #084d23;
